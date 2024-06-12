@@ -12,6 +12,16 @@ services:
     networks:
       - app-network
     command: ["./main"]
+
+  # NODE
+  node:
+    build: ./node
+    image: node:lts-alpine3.20
+    container_name: nodeef
+    ports:
+      - "3003:3000"
+    networks:
+      - app-network
   
   # POSTGRES
   db:
