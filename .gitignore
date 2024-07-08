@@ -1,4 +1,4 @@
 *node_modules
 
-docker-compose-1.yml
 .env.production
+golang2

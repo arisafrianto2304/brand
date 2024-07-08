@@ -1,32 +1,33 @@
-# Build stage
-FROM golang:alpine3.20 AS builder
+# Stage 1: Building the application and generating documentation
+FROM golang:1.22-bullseye AS builder
 WORKDIR /app
 
-# Menyalin go.mod dan go.sum dan mengunduh dependensi
+# Copy go.mod and go.sum files and download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Menyalin sumber kode aplikasi ke dalam image
+# Install swag CLI tool
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Copy the entire source code into the image
 COPY . .
 
-# Membangun aplikasi Go; pastikan untuk menyesuaikan path jika struktur folder berbeda
+# Generate Swagger documentation
+RUN /go/bin/swag init -g cmd/main.go
+
+# Build the Go application
 RUN go build -o main cmd/main.go
 
-# Final stage
-FROM alpine:3.20
+# Stage 2: Setup the runtime container
+FROM golang:1.22-bullseye
 WORKDIR /app
 
-# Menyalin executable dari stage builder
+# Copy the executable and Swagger docs from the builder stage
 COPY --from=builder /app/main .
+COPY --from=builder /app/docs ./docs
 
-# Menjalankan aplikasi
+# Expose port (adjust if different)
+# EXPOSE 8080
+
+# Run the application
 CMD ["./main"]
-
-
-# FROM golang:alpine3.20
-# WORKDIR /app
-# COPY go.mod go.sum ./
-# RUN go mod download
-# COPY . .
-# RUN go build -o main .
-# CMD ["./main"]
