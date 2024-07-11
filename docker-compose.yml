@@ -11,6 +11,8 @@ services:
       - db
     networks:
       - app-network
+    env_file:
+      - ./.env.developer
     command: ["./main"]
 
   # NODE
