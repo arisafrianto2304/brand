@@ -12,6 +12,8 @@ RUN go install github.com/swaggo/swag/cmd/swag@latest
 # Copy the entire source code into the image
 COPY . .
 
+# RUN ls -la
+
 # Generate Swagger documentation
 RUN /go/bin/swag init -g cmd/main.go
 
