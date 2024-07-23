@@ -3,6 +3,7 @@ package main
 import (
 	"brandAPI/configs"
 	_ "brandAPI/docs"
+	"brandAPI/internal/handlers"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,6 +27,8 @@ func main() {
 	defer db.Close()
 
 	app.Get("/swagger/*", swagger.HandlerDefault) // default
+	// Register POST /users route
+	app.Post("/users", handlers.CreateUserHandler(db))
 
 	app.Get("/swagger/*", swagger.New(swagger.Config{ // custom
 		URL:         "http://example.com/doc.json",
@@ -41,5 +44,8 @@ func main() {
 		OAuth2RedirectUrl: "http://localhost:8080/swagger/oauth2-redirect.html",
 	}))
 
-	app.Listen(":8080")
+	err := app.Listen(":8080")
+	if err != nil {
+		log.Fatalf("Error starting server: %s", err)
+	}
 }
