@@ -15,7 +15,7 @@ COPY . .
 # RUN ls -la
 
 # Generate Swagger documentation
-RUN /go/bin/swag init -g cmd/main.go
+RUN /go/bin/swag init -g cmd/main.go 
 
 # Build the Go application
 RUN go build -o main cmd/main.go

@@ -29,6 +29,7 @@ func main() {
 	app.Get("/swagger/*", swagger.HandlerDefault) // default
 	// Register POST /users route
 	app.Post("/users", handlers.CreateUserHandler(db))
+	app.Get("/users", handlers.GetAllUserHandler(db))
 
 	app.Get("/swagger/*", swagger.New(swagger.Config{ // custom
 		URL:         "http://example.com/doc.json",

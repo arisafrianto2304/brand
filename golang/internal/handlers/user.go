@@ -17,7 +17,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param user body models.User required "User Data"
-// @Success 201 {object} models.User
+// @Success 201 {object} models.UserResponse
 // @Failure 400 {string} string "invalid input, object invalid"
 // @Failure 500 {string} string "internal server error"
 // @Router /users [post]
@@ -53,7 +53,40 @@ func CreateUserHandler(db *sql.DB) fiber.Handler {
 			})
 		}
 
-		user.Password = "" // Ensure password is not returned in the response
+		user.Password = "*********" // Ensure password is not returned in the response
 		return c.Status(fiber.StatusCreated).JSON(user)
+	}
+}
+
+// GetAllUsersHandler retrieves all users from the database
+// @Summary Get all users
+// @Description Retrieves all users from the database
+// @Tags users
+// @Accept json
+// @Produce json
+// @Success 200 {array} models.User "list of all users"
+// @Router /users [get]
+func GetAllUserHandler(db *sql.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		users := []models.User{}
+		rows, err := db.Query(`SELECT user_id, username FROM "user" WHERE softdelete IS NULL`)
+		if err != nil {
+			log.Println("failed to retrive users:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to retrieve users",
+			})
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var user models.User
+			if err := rows.Scan(&user.UserID, &user.Username); err != nil {
+				log.Println("failed to scan user:", err)
+				continue
+			}
+			users = append(users, user)
+		}
+
+		return c.JSON(users)
 	}
 }
