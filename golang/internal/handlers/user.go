@@ -90,3 +90,54 @@ func GetAllUserHandler(db *sql.DB) fiber.Handler {
 		return c.JSON(users)
 	}
 }
+
+// UpdateUserHandler updates a user's information
+// @Summary Update a user
+// @Description Update user's details by user ID
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param user body models.User required "User Data"
+// @Success 200 {object} models.UserResponse "User updated successfully"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /users/{id} [put]
+func UpdateUserHandler(db *sql.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		user := new(models.User)
+
+		if err := c.BodyParser(user); err != nil {
+			log.Println("Failed to parse user:", err)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Cannot parse JSON",
+			})
+		}
+
+		// Hashing the password before storing it
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Println("Failed to hash password:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to secure user data",
+			})
+		}
+
+		// Set current time as updated_at
+		currentTime := time.Now()
+
+		// Update user in the database
+		_, err = db.Exec(`UPDATE "user" SET username = $2, password = $3, updated_at = $4 WHERE user_id = $1`, id, user.Username, string(hashedPassword), currentTime)
+		if err != nil {
+			log.Println("Error updating user in database:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to update user",
+			})
+		}
+
+		userResponse := models.UserResponse{Username: user.Username, Password: "*********"}
+		return c.JSON(userResponse)
+	}
+}

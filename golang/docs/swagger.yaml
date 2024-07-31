@@ -1,4 +1,21 @@
 basePath: /
+definitions:
+  models.User:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.UserResponse:
+    properties:
+      password:
+        example: arisafrianto12345
+        type: string
+      username:
+        example: arisafrianto
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -11,5 +28,76 @@ info:
   termsOfService: http://swagger.io/terms/
   title: Fiber Example API
   version: "1.0"
-paths: {}
+paths:
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all users from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: list of all users
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Add a new user to the database
+      parameters:
+      - description: User Data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+        "400":
+          description: invalid input, object invalid
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing user's details in the database
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated User Data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Update a user
+      tags:
+      - users
 swagger: "2.0"
