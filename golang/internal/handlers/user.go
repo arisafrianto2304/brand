@@ -4,6 +4,7 @@ import (
 	"brandAPI/internal/models"
 	"database/sql"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -103,7 +104,7 @@ func GetAllUserHandler(db *sql.DB) fiber.Handler {
 // @Failure 400 {string} string "Bad Request"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /users/{id} [put]
+// @Router /users/{id} [patch]
 func UpdateUserHandler(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
@@ -116,20 +117,43 @@ func UpdateUserHandler(db *sql.DB) fiber.Handler {
 			})
 		}
 
-		// Hashing the password before storing it
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-		if err != nil {
-			log.Println("Failed to hash password:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to secure user data",
-			})
+		// Mulai membangun query untuk update
+		query := `UPDATE "user" SET `
+		args := []interface{}{}
+		argID := 1
+
+		// Cek apakah username di-update
+		if user.Username != "" {
+			query += `username = $` + strconv.Itoa(argID) + `, `
+			args = append(args, user.Username)
+			argID++
+		}
+
+		// Cek apakah password di-update
+		if user.Password != "" {
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+			if err != nil {
+				log.Println("Failed to hash password:", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Failed to secure user data",
+				})
+			}
+			query += `password = $` + strconv.Itoa(argID) + `, `
+			args = append(args, string(hashedPassword))
+			argID++
 		}
 
 		// Set current time as updated_at
-		currentTime := time.Now()
+		query += `updated_at = $` + strconv.Itoa(argID)
+		args = append(args, time.Now())
+		argID++
 
-		// Update user in the database
-		_, err = db.Exec(`UPDATE "user" SET username = $2, password = $3, updated_at = $4 WHERE user_id = $1`, id, user.Username, string(hashedPassword), currentTime)
+		// Tambahkan kondisi WHERE
+		query += ` WHERE user_id = $` + strconv.Itoa(argID)
+		args = append(args, id)
+
+		// Eksekusi query
+		_, err := db.Exec(query, args...)
 		if err != nil {
 			log.Println("Error updating user in database:", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -137,6 +161,7 @@ func UpdateUserHandler(db *sql.DB) fiber.Handler {
 			})
 		}
 
+		// Buat response tanpa menampilkan password
 		userResponse := models.UserResponse{Username: user.Username, Password: "*********"}
 		return c.JSON(userResponse)
 	}
